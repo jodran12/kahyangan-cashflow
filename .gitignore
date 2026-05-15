@@ -1,0 +1,13 @@
+# Mengabaikan database riil biar tidak bocor atau menimpa data lama
+cashflow.db
+
+# Mengabaikan foto profil yang di-upload user agar tidak memperberat git
+static/uploads/
+
+# Mengabaikan file log sistem
+output.log
+*.log
+
+# Mengabaikan cache python
+__pycache__/
+*.pyc

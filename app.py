@@ -1,0 +1,146 @@
+from flask import Flask, render_template, request, redirect, url_for, session
+import sqlite3
+from datetime import datetime, timedelta
+import os
+from werkzeug.utils import secure_filename
+from PIL import Image
+
+app = Flask(__name__)
+app.secret_key = 'kahyangan_ultra_secret_2026'
+
+UPLOAD_FOLDER = 'static/uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024 
+
+DB_NAME = 'cashflow.db'
+
+def get_db():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with get_db() as conn:
+        conn.execute('CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY, name TEXT, username TEXT, pin TEXT, profile_pic TEXT)')
+        conn.execute('CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, type TEXT)')
+        conn.execute('CREATE TABLE IF NOT EXISTS transactions (id INTEGER PRIMARY KEY, type TEXT, subtype TEXT, amount INTEGER, category TEXT, note TEXT, date TEXT, created_at TEXT)')
+        user_check = conn.execute('SELECT * FROM settings').fetchall()
+        if not user_check:
+            users = [('Fariz', 'admin', '1234', 'https://i.pravatar.cc/150?u=fariz'), ('Sisil', 'sisil', '080599', 'https://i.pravatar.cc/150?u=sisil')]
+            conn.executemany('INSERT INTO settings (name, username, pin, profile_pic) VALUES (?, ?, ?, ?)', users)
+            default_cats = [('Pencairan TikTok', 'masuk'), ('Pencairan Shopee', 'masuk'), ('Bahan Baku', 'keluar'), ('Logistik', 'keluar'), ('Kebutuhan Pribadi', 'keluar')]
+            conn.executemany('INSERT INTO categories (name, type) VALUES (?, ?)', default_cats)
+        conn.commit()
+
+init_db()
+
+def get_categories():
+    with get_db() as conn:
+        cat_in = conn.execute('SELECT * FROM categories WHERE type = "masuk" ORDER BY name ASC').fetchall()
+        cat_out = conn.execute('SELECT * FROM categories WHERE type = "keluar" ORDER BY name ASC').fetchall()
+    return cat_in, cat_out
+
+@app.route('/')
+def index():
+    if 'user' not in session: return redirect(url_for('login'))
+    cat_in, cat_out = get_categories()
+    with get_db() as conn:
+        user = conn.execute('SELECT * FROM settings WHERE username = ?', (session['user'],)).fetchone()
+        total_in = conn.execute("SELECT SUM(amount) FROM transactions WHERE type = 'masuk'").fetchone()[0] or 0
+        total_out = conn.execute("SELECT SUM(amount) FROM transactions WHERE type = 'keluar'").fetchone()[0] or 0
+        recent = conn.execute("SELECT * FROM transactions ORDER BY date DESC, id DESC LIMIT 8").fetchall()
+    return render_template('index.html', page='dashboard', user=user, cat_in=cat_in, cat_out=cat_out, total_in=total_in, total_out=total_out, recent=recent)
+
+@app.route('/history')
+def history():
+    if 'user' not in session: return redirect(url_for('login'))
+    cat_in, cat_out = get_categories()
+    f_type = request.args.get('type', 'semua')
+    f_range = request.args.get('range', 'all')
+    start_date, end_date = request.args.get('start_date'), request.args.get('end_date')
+    query, params = "SELECT * FROM transactions WHERE 1=1", []
+    if f_type == 'masuk': query += " AND type = 'masuk'"
+    elif f_type == 'keluar_pribadi': query += " AND type = 'keluar' AND subtype = 'pribadi'"
+    elif f_type == 'keluar_bisnis': query += " AND type = 'keluar' AND subtype = 'bisnis'"
+    today = datetime.now().date()
+    if f_range == 'today': query += " AND date = ?"; params.append(str(today))
+    elif f_range == 'yesterday': query += " AND date = ?"; params.append(str(today - timedelta(days=1)))
+    elif f_range == '7days': query += " AND date >= ?"; params.append(str(today - timedelta(days=7)))
+    elif f_range == 'month': query += " AND strftime('%m', date) = ? AND strftime('%Y', date) = ?"; params.extend([today.strftime('%m'), today.strftime('%Y')])
+    elif f_range == 'custom' and start_date and end_date: query += " AND date BETWEEN ? AND ?"; params.extend([start_date, end_date])
+    query += " ORDER BY date DESC, id DESC"
+    with get_db() as conn:
+        data = conn.execute(query, params).fetchall()
+        user = conn.execute('SELECT * FROM settings WHERE username = ?', (session['user'],)).fetchone()
+    return render_template('index.html', page='history', transactions=data, user=user, cat_in=cat_in, cat_out=cat_out, f_type=f_type, f_range=f_range, start_date=start_date, end_date=end_date)
+
+@app.route('/add', methods=['POST'])
+def add_transaction():
+    amount = int(request.form['amount'].replace('.', ''))
+    tgl = request.form['date'] if request.form['date'] else datetime.now().strftime('%Y-%m-%d')
+    with get_db() as conn:
+        conn.execute('INSERT INTO transactions (type, subtype, amount, category, note, date, created_at) VALUES (?,?,?,?,?,?,?)', 
+                     (request.form['type'], request.form.get('subtype', 'bisnis'), amount, request.form['category'], request.form['note'], tgl, datetime.now().strftime('%H:%M:%S')))
+        conn.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/edit', methods=['POST'])
+def edit_transaction():
+    amount = int(request.form['amount'].replace('.', ''))
+    tgl = request.form['date'] if request.form['date'] else datetime.now().strftime('%Y-%m-%d')
+    with get_db() as conn:
+        conn.execute('UPDATE transactions SET type=?, subtype=?, amount=?, category=?, note=?, date=? WHERE id=?', 
+                     (request.form['type'], request.form.get('subtype', 'bisnis'), amount, request.form['category'], request.form['note'], tgl, request.form['id']))
+        conn.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/delete/<int:id>', methods=['POST'])
+def delete_transaction(id):
+    with get_db() as conn:
+        conn.execute('DELETE FROM transactions WHERE id = ?', (id,)); conn.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/category_manage', methods=['POST'])
+def category_manage():
+    with get_db() as conn:
+        if request.form['action'] == 'add': conn.execute('INSERT INTO categories (name, type) VALUES (?,?)', (request.form['name'], request.form['type']))
+        elif request.form['action'] == 'edit': conn.execute('UPDATE categories SET name = ?, type = ? WHERE id = ?', (request.form['name'], request.form['type'], request.form['id']))
+        elif request.form['action'] == 'delete': conn.execute('DELETE FROM categories WHERE id = ?', (request.form['id'],))
+        conn.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/settings_update', methods=['POST'])
+def settings_update():
+    f = request.files.get('profile_pic_file')
+    with get_db() as conn:
+        u = conn.execute('SELECT profile_pic FROM settings WHERE username = ?', (session['user'],)).fetchone()
+        p = u['profile_pic']
+        if f and f.filename != '':
+            fname = secure_filename(f"profile_{request.form['username']}.png")
+            fpath = os.path.join(app.config['UPLOAD_FOLDER'], fname)
+            img = Image.open(f).convert('RGB')
+            img.thumbnail((800, 800))
+            img.save(fpath, 'JPEG', quality=60)
+            p = f"/static/uploads/{fname}"
+        conn.execute('UPDATE settings SET name=?, username=?, pin=?, profile_pic=? WHERE username=?', 
+                     (request.form['name'], request.form['username'], request.form['pin'], p, session['user']))
+        conn.commit()
+        session['user'] = request.form['username']
+    return redirect(url_for('index'))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        with get_db() as conn:
+            u = conn.execute('SELECT * FROM settings WHERE username = ? AND pin = ?', (request.form['username'], request.form['pin'])).fetchone()
+            if u: session['user'] = u['username']; session.permanent = True; return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout(): session.pop('user', None); return redirect(url_for('login'))
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)

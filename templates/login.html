@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahyangan OS | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background: #09090b; font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+    <div class="w-full max-w-sm bg-zinc-900 border border-zinc-800 p-10 rounded-[40px] shadow-2xl">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-white tracking-tighter italic">KAHYANGAN</h1>
+            <p class="text-[10px] text-zinc-500 uppercase tracking-[0.4em] mt-3">Identity Verification</p>
+        </div>
+        <form action="/login" method="POST" class="space-y-4">
+            <input type="text" name="username" placeholder="Username" class="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-indigo-500/20" required>
+            <input type="password" name="pin" placeholder="PIN" class="w-full bg-zinc-800 border border-zinc-700 p-4 rounded-2xl text-white outline-none focus:ring-2 ring-indigo-500/20" required>
+            <button type="submit" class="w-full py-5 bg-indigo-600 text-white font-bold rounded-2xl shadow-xl shadow-indigo-500/10 active:scale-95 transition-transform tracking-widest uppercase text-xs">Akses Sistem</button>
+        </form>
+    </div>
+</body>
+</html>

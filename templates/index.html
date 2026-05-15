@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="id" id="root-html">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Kahyangan Cash Flow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>tailwind.config = { darkMode: 'class' }</script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.3s; -webkit-tap-highlight-color: transparent; }
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .active-tab { color: #6366f1; }
+        .cat-btn.active, .edit-cat-btn.active { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Input Tanggal Placeholder Fix */
+        .date-input::before { content: attr(placeholder); width: 100%; color: #94a3b8; }
+        .date-input:focus::before, .date-input:valid::before { content: ""; display: none; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] dark:bg-[#09090B] text-slate-900 dark:text-slate-100 min-h-screen">
+
+    <header class="h-20 bg-white/80 dark:bg-[#09090B]/80 border-b border-slate-200 dark:border-zinc-800 sticky top-0 z-40 px-6 flex items-center justify-between backdrop-blur-xl pt-safe">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-lg"><i data-lucide="crown" class="w-4 h-4"></i></div>
+            <span class="font-800 tracking-tighter uppercase italic text-sm md:text-base">Kahyangan Cash Flow</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <button onclick="toggleDarkMode()" class="p-2 text-zinc-400"><i data-lucide="sun" class="hidden dark:block"></i><i data-lucide="moon" class="dark:hidden"></i></button>
+            <img src="{{ user['profile_pic'] }}" onclick="toggleModal('settings-modal')" class="w-10 h-10 rounded-xl object-cover border dark:border-zinc-800 cursor-pointer bg-zinc-200">
+        </div>
+    </header>
+
+    <main class="p-6 md:p-10 max-w-5xl mx-auto space-y-8 pb-32">
+        {% if page == 'dashboard' %}
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade">
+            <div class="bg-white dark:bg-[#121214] p-6 rounded-[32px] border dark:border-zinc-800 shadow-sm">
+                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Masuk</p>
+                <h3 class="text-2xl font-800 text-emerald-500">Rp {{ "{:,.0f}".format(total_in).replace(",", ".") }}</h3>
+            </div>
+            <div class="bg-white dark:bg-[#121214] p-6 rounded-[32px] border dark:border-zinc-800 shadow-sm">
+                <p class="text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-1">Keluar</p>
+                <h3 class="text-2xl font-800 text-rose-500">Rp {{ "{:,.0f}".format(total_out).replace(",", ".") }}</h3>
+            </div>
+            <div class="bg-indigo-600 p-6 rounded-[32px] text-white shadow-xl shadow-indigo-500/20">
+                <p class="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-1">Saldo</p>
+                <h3 class="text-2xl font-800">Rp {{ "{:,.0f}".format(total_in - total_out).replace(",", ".") }}</h3>
+            </div>
+        </section>
+
+        <section class="bg-white dark:bg-[#121214] p-8 rounded-[32px] border dark:border-zinc-800 animate-fade">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-800 text-lg">History Terakhir</h3>
+                <a href="/history" class="text-xs font-bold text-indigo-500 uppercase tracking-widest">Detail →</a>
+            </div>
+            <div class="space-y-4">
+                {% for r in recent %}
+                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-zinc-900 rounded-2xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center {{ 'bg-emerald-500/10 text-emerald-500' if r['type'] == 'masuk' else 'bg-rose-500/10 text-rose-500' }}">
+                            <i data-lucide="{{ 'arrow-down-left' if r['type'] == 'masuk' else 'arrow-up-right' }}" class="w-5 h-5"></i>
+                        </div>
+                        <div><p class="text-sm font-bold tracking-tight">{{ r['category'] }}</p><p class="text-[10px] text-zinc-500 font-bold uppercase">{{ r['date'] }} • {{ r['subtype']|upper if r['type'] == 'keluar' else 'INCOME' }}</p></div>
+                    </div>
+                    <p class="text-sm font-800 {{ 'text-emerald-500' if r['type'] == 'masuk' else 'text-rose-500' }}">
+                        {{ '+' if r['type'] == 'masuk' else '-' }}Rp {{ "{:,.0f}".format(r['amount']).replace(",", ".") }}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% elif page == 'history' %}
+        <section class="space-y-6 animate-fade">
+            <h3 class="text-2xl font-800 tracking-tight">Records</h3>
+            <form action="/history" method="GET" class="bg-white dark:bg-[#121214] p-6 rounded-[32px] border dark:border-zinc-800 flex flex-col md:flex-row gap-4">
+                <select name="type" class="flex-1 bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl border dark:border-zinc-800 text-sm font-bold outline-none">
+                    <option value="semua">Semua</option><option value="masuk" {{'selected' if f_type=='masuk'}}>Masuk</option><option value="keluar_pribadi" {{'selected' if f_type=='keluar_pribadi'}}>Pribadi</option><option value="keluar_bisnis" {{'selected' if f_type=='keluar_bisnis'}}>Bisnis</option>
+                </select>
+                <select name="range" onchange="toggleCustomDate(this.value)" class="flex-1 bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl border dark:border-zinc-800 text-sm font-bold outline-none">
+                    <option value="all">Waktu</option><option value="today" {{'selected' if f_range=='today'}}>Hari Ini</option><option value="yesterday" {{'selected' if f_range=='yesterday'}}>Kemarin</option><option value="7days" {{'selected' if f_range=='7days'}}>7 Hari</option><option value="month" {{'selected' if f_range=='month'}}>Bulan Ini</option><option value="custom" {{'selected' if f_range=='custom'}}>Custom</option>
+                </select>
+                <div id="custom-date-box" class="{{ 'flex' if f_range=='custom' else 'hidden' }} gap-2">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl border dark:border-zinc-800 text-xs font-bold">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl border dark:border-zinc-800 text-xs font-bold">
+                </div>
+                <button type="submit" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold text-sm uppercase">Filter</button>
+            </form>
+            <div class="bg-white dark:bg-[#121214] rounded-[32px] border dark:border-zinc-800 overflow-hidden shadow-sm">
+                <table class="w-full text-left">
+                    <tbody class="divide-y dark:divide-zinc-800">
+                        {% for t in transactions %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-zinc-900/50 transition">
+                            <td class="p-5 w-24 text-xs font-bold text-zinc-400">{{ t['date'] }}</td>
+                            <td class="p-5">
+                                <p class="text-sm font-bold tracking-tight">{{ t['category'] }}</p>
+                                <p class="text-[10px] text-zinc-400 font-bold uppercase">{{ t['subtype']|upper if t['type'] == 'keluar' else 'INCOME' }}</p>
+                            </td>
+                            <td class="p-5 text-right">
+                                <p class="text-sm font-800 {{ 'text-emerald-500' if t['type'] == 'masuk' else 'text-rose-500' }} mb-2">{{ '+' if t['type'] == 'masuk' else '-' }}Rp {{ "{:,.0f}".format(t['amount']).replace(",", ".") }}</p>
+                                <div class="flex justify-end gap-3">
+                                    <button type="button" onclick="openEditModal('{{ t.id }}', '{{ t.type }}', '{{ t.subtype }}', '{{ t.amount }}', '{{ t.category }}', '{{ t.date }}', '{{ t.note }}')" class="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg text-indigo-500"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                                    <form action="/delete/{{ t.id }}" method="POST" onsubmit="return confirm('Hapus?')"><button type="submit" class="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-lg text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% endif %}
+    </main>
+
+    <button onclick="toggleModal('add-modal')" class="fixed bottom-24 right-6 w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl z-40 active:scale-90 transition-transform lg:bottom-10"><i data-lucide="plus" class="w-8 h-8"></i></button>
+    
+    <nav class="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] h-16 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border dark:border-zinc-800 rounded-3xl flex items-center justify-around z-50 shadow-2xl">
+        <a href="/" class="p-4 {{ 'active-tab' if page == 'dashboard' }}"><i data-lucide="layout-grid"></i></a>
+        <a href="/history" class="p-4 {{ 'active-tab' if page == 'history' }}"><i data-lucide="history"></i></a>
+        <button onclick="toggleModal('category-modal')" class="p-4 text-zinc-400"><i data-lucide="tags"></i></button>
+        <button onclick="toggleModal('settings-modal')" class="p-4 text-zinc-400"><i data-lucide="user"></i></button>
+    </nav>
+
+    <div id="add-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] hidden flex items-end md:items-center justify-center p-0 md:p-6">
+        <div class="bg-white dark:bg-[#121214] w-full max-w-md rounded-t-[40px] md:rounded-[40px] p-10 space-y-6 max-h-[90vh] overflow-y-auto no-scrollbar">
+            <div class="flex justify-between items-center"><h3 class="text-xl font-800 text-indigo-600">Baru</h3><button onclick="toggleModal('add-modal')"><i data-lucide="x"></i></button></div>
+            <form action="/add" method="POST" class="space-y-4">
+                <div class="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-zinc-900 p-1 rounded-2xl">
+                    <button type="button" onclick="switchType('masuk')" id="btn-tab-masuk" class="py-3 rounded-xl font-800 text-xs uppercase bg-white dark:bg-zinc-800 text-emerald-500 shadow-sm">Masuk</button>
+                    <button type="button" onclick="switchType('keluar')" id="btn-tab-keluar" class="py-3 rounded-xl font-800 text-xs uppercase text-zinc-500">Keluar</button>
+                </div>
+                <input type="hidden" name="type" id="input-type" value="masuk">
+                <div id="subtype-box" class="hidden grid grid-cols-2 gap-2 animate-fade">
+                    <label class="cursor-pointer"><input type="radio" name="subtype" value="bisnis" checked class="hidden peer"><div class="py-3 text-center border-2 dark:border-zinc-800 rounded-xl peer-checked:border-indigo-500 peer-checked:text-indigo-500 font-bold text-[10px]">💼 BISNIS</div></label>
+                    <label class="cursor-pointer"><input type="radio" name="subtype" value="pribadi" class="hidden peer"><div class="py-3 text-center border-2 dark:border-zinc-800 rounded-xl peer-checked:border-indigo-500 peer-checked:text-indigo-500 font-bold text-[10px]">👤 PRIBADI</div></label>
+                </div>
+                <input type="text" name="amount" inputmode="numeric" onkeyup="formatRupiah(this)" placeholder="0" class="w-full bg-slate-50 dark:bg-zinc-800 p-4 rounded-2xl outline-none text-2xl font-800 border dark:border-zinc-800" required>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center"><label class="text-[10px] font-bold text-zinc-400 uppercase">Kategori</label><button type="button" onclick="toggleModal('category-modal')" class="text-[10px] font-bold text-indigo-500 px-3 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl">+ Kategori</button></div>
+                    <div id="cat-container-masuk" class="flex flex-wrap gap-2">{% for c in cat_in %}<button type="button" onclick="selectCat('{{ c.name }}', this)" class="cat-btn px-4 py-2 rounded-xl border dark:border-zinc-800 text-xs font-bold">{{ c.name }}</button>{% endfor %}</div>
+                    <div id="cat-container-keluar" class="flex flex-wrap gap-2 hidden">{% for c in cat_out %}<button type="button" onclick="selectCat('{{ c.name }}', this)" class="cat-btn px-4 py-2 rounded-xl border dark:border-zinc-800 text-xs font-bold">{{ c.name }}</button>{% endfor %}</div>
+                    <input type="hidden" name="category" id="selected-category" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="date" name="date" placeholder="Tanggal" class="date-input w-full bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl text-xs font-bold border dark:border-zinc-800">
+                    <input type="text" name="note" placeholder="Ket..." class="w-full bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl text-xs border dark:border-zinc-800">
+                </div>
+                <button type="submit" class="w-full py-5 bg-indigo-600 text-white font-800 rounded-3xl shadow-xl uppercase text-xs">Simpan</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] hidden flex items-end md:items-center justify-center p-0 md:p-6">
+        <div class="bg-white dark:bg-[#121214] w-full max-w-md rounded-t-[40px] md:rounded-[40px] p-10 space-y-6">
+            <h3 class="text-xl font-800 text-indigo-600">Update Data</h3>
+            <form action="/edit" method="POST" class="space-y-4">
+                <input type="hidden" name="id" id="edit-id">
+                <div class="grid grid-cols-2 gap-2 bg-slate-100 dark:bg-zinc-900 p-1 rounded-2xl">
+                    <button type="button" onclick="switchTypeEdit('masuk')" id="edit-btn-masuk" class="py-3 rounded-xl font-800 text-xs uppercase transition-all">Masuk</button>
+                    <button type="button" onclick="switchTypeEdit('keluar')" id="edit-btn-keluar" class="py-3 rounded-xl font-800 text-xs uppercase transition-all">Keluar</button>
+                </div>
+                <input type="hidden" name="type" id="edit-type">
+                <div id="edit-subtype-box" class="hidden grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer"><input type="radio" name="subtype" id="edit-sub-bisnis" value="bisnis" class="hidden peer"><div class="py-3 text-center border-2 dark:border-zinc-800 rounded-xl peer-checked:border-indigo-500 font-bold text-[10px]">💼 BISNIS</div></label>
+                    <label class="cursor-pointer"><input type="radio" name="subtype" id="edit-sub-pribadi" value="pribadi" class="hidden peer"><div class="py-3 text-center border-2 dark:border-zinc-800 rounded-xl peer-checked:border-indigo-500 font-bold text-[10px]">👤 PRIBADI</div></label>
+                </div>
+                <input type="text" name="amount" id="edit-nominal" inputmode="numeric" onkeyup="formatRupiah(this)" class="w-full bg-slate-50 dark:bg-zinc-800 p-4 rounded-2xl text-2xl font-800 border dark:border-zinc-800 outline-none" required>
+                <div class="space-y-3">
+                    <div id="edit-cat-masuk" class="flex flex-wrap gap-2">{% for c in cat_in %}<button type="button" onclick="selectCatEdit('{{ c.name }}', this)" class="edit-cat-btn px-4 py-2 rounded-xl border dark:border-zinc-800 text-xs font-bold bg-slate-50 dark:bg-zinc-900">{{ c.name }}</button>{% endfor %}</div>
+                    <div id="edit-cat-keluar" class="flex flex-wrap gap-2 hidden">{% for c in cat_out %}<button type="button" onclick="selectCatEdit('{{ c.name }}', this)" class="edit-cat-btn px-4 py-2 rounded-xl border dark:border-zinc-800 text-xs font-bold bg-slate-50 dark:bg-zinc-900">{{ c.name }}</button>{% endfor %}</div>
+                    <input type="hidden" name="category" id="edit-selected-category" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="date" name="date" id="edit-date" placeholder="Tanggal" class="date-input w-full bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl text-xs font-bold border dark:border-zinc-800">
+                    <input type="text" name="note" id="edit-note" placeholder="Note" class="w-full bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl text-xs border dark:border-zinc-800">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 py-4 bg-indigo-600 text-white font-800 rounded-2xl shadow-xl uppercase text-xs">Simpan</button>
+                    <button type="button" onclick="toggleModal('edit-modal')" class="flex-1 py-4 bg-zinc-200 dark:bg-zinc-800 font-bold rounded-2xl uppercase text-xs">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="category-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[130] hidden flex items-center justify-center p-6">
+        <div class="bg-white dark:bg-[#121214] w-full max-w-md rounded-[40px] p-8 space-y-6 shadow-2xl">
+            <div class="flex justify-between items-center"><h3 class="text-xl font-800 text-indigo-600" id="cat-title">Kategori</h3><button onclick="toggleModal('category-modal'); resetCatForm();"><i data-lucide="x"></i></button></div>
+            <form action="/category_manage" method="POST" id="cat-form" class="space-y-3">
+                <input type="hidden" name="action" id="cat-action" value="add"><input type="hidden" name="id" id="cat-id">
+                <input type="text" name="name" id="cat-name" placeholder="Emoji + Nama" class="w-full bg-slate-50 dark:bg-zinc-900 p-3 rounded-xl border dark:border-zinc-800 font-bold text-sm" required>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="cursor-pointer"><input type="radio" name="type" id="cat-type-masuk" value="masuk" checked class="hidden peer"><div class="py-2 text-center border dark:border-zinc-800 rounded-lg peer-checked:bg-emerald-500 peer-checked:text-white font-bold text-[10px]">MASUK</div></label>
+                    <label class="cursor-pointer"><input type="radio" name="type" id="cat-type-keluar" value="keluar" class="hidden peer"><div class="py-2 text-center border dark:border-zinc-800 rounded-lg peer-checked:bg-rose-500 peer-checked:text-white font-bold text-[10px]">KELUAR</div></label>
+                </div>
+                <button type="submit" id="cat-submit" class="w-full py-3 bg-indigo-600 text-white font-800 rounded-xl uppercase text-[10px]">Simpan</button>
+            </form>
+            <div class="max-h-48 overflow-y-auto space-y-2 no-scrollbar">
+                {% for c in cat_in + cat_out %}
+                <div class="flex justify-between items-center p-3 bg-slate-50 dark:bg-zinc-900 rounded-xl animate-fade">
+                    <span class="text-[11px] font-bold">{{ c.name }} <span class="text-[8px] text-zinc-500 uppercase ml-2">({{ c.type }})</span></span>
+                    <div class="flex gap-3">
+                        <button onclick="editCategory('{{ c.id }}', '{{ c.name }}', '{{ c.type }}')" class="text-indigo-400"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <form action="/category_manage" method="POST"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="{{ c.id }}"><button type="submit" class="text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button></form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[200] hidden flex items-center justify-center p-6">
+        <div class="bg-white dark:bg-[#121214] w-full max-w-md rounded-[40px] p-10 space-y-8 shadow-2xl animate-fade">
+            <h3 class="text-xl font-800 text-indigo-600">Profil</h3>
+            <form action="/settings_update" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <div class="flex justify-center mb-4"><div class="relative group">
+                    <img src="{{ user['profile_pic'] }}" id="preview-img" class="w-24 h-24 rounded-3xl object-cover border-4 border-indigo-500/20 bg-zinc-100">
+                    <label class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-3xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"><i data-lucide="camera" class="text-white w-6 h-6"></i><input type="file" name="profile_pic_file" class="hidden" onchange="previewFile(this)"></label>
+                </div></div>
+                <input type="text" name="name" value="{{ user['name'] }}" class="w-full bg-slate-50 dark:bg-zinc-900 p-4 rounded-2xl border dark:border-zinc-800 font-bold text-sm">
+                <input type="text" name="username" value="{{ user['username'] }}" class="w-full bg-slate-50 dark:bg-zinc-900 p-4 rounded-2xl border dark:border-zinc-800 font-bold text-sm">
+                <div class="relative">
+                    <input type="password" name="pin" id="input-pin" value="{{ user['pin'] }}" class="w-full bg-slate-50 dark:bg-zinc-900 p-4 rounded-2xl border dark:border-zinc-800 font-bold text-sm">
+                    <button type="button" onclick="togglePin()" class="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400"><i data-lucide="eye" id="eye-icon" class="w-5 h-5"></i></button>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 py-5 bg-indigo-600 text-white font-800 rounded-3xl uppercase text-[10px]">Update</button>
+                    <button type="button" onclick="toggleModal('settings-modal')" class="flex-1 py-5 bg-zinc-200 dark:bg-zinc-800 font-bold rounded-3xl uppercase text-[10px]">Batal</button>
+                </div>
+            </form>
+            <a href="/logout" class="block text-center text-rose-500 font-bold text-[10px] uppercase">Logout</a>
+        </div>
+    </div>
+
+    <script>
+        function toggleDarkMode() { const root = document.getElementById('root-html'); root.classList.toggle('dark'); localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light'); lucide.createIcons(); }
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); lucide.createIcons(); }
+        function formatRupiah(input) { let v = input.value.replace(/[^,\d]/g, '').toString(), split = v.split(','), sisa = split[0].length % 3, r = split[0].substr(0, sisa), ribuan = split[0].substr(sisa).match(/\d{3}/gi); if (ribuan) { let sep = sisa ? '.' : ''; r += sep + ribuan.join('.'); } input.value = r; }
+        function previewFile(input) { if (input.files && input.files[0]) { var reader = new FileReader(); reader.onload = e => document.getElementById('preview-img').src = e.target.result; reader.readAsDataURL(input.files[0]); } }
+        function togglePin() { const p = document.getElementById('input-pin'), i = document.getElementById('eye-icon'); p.type = p.type === 'password' ? 'text' : 'password'; i.setAttribute('data-lucide', p.type === 'password' ? 'eye' : 'eye-off'); lucide.createIcons(); }
+        
+        function toggleCustomDate(v) { 
+            const b = document.getElementById('custom-date-box'); 
+            if(v === 'custom') { b.classList.remove('hidden'); b.classList.add('flex'); }
+            else { b.classList.add('hidden'); b.classList.remove('flex'); }
+        }
+
+        function switchType(type) {
+            document.getElementById('input-type').value = type;
+            const btnM = document.getElementById('btn-tab-masuk'), btnK = document.getElementById('btn-tab-keluar'), catM = document.getElementById('cat-container-masuk'), catK = document.getElementById('cat-container-keluar'), sub = document.getElementById('subtype-box');
+            if(type === 'masuk') { btnM.className = "py-3 rounded-xl font-800 text-xs uppercase bg-white dark:bg-zinc-800 text-emerald-500 shadow-sm"; btnK.className = "py-3 rounded-xl font-800 text-xs uppercase text-zinc-500"; catM.classList.remove('hidden'); catK.classList.add('hidden'); sub.classList.add('hidden'); }
+            else { btnK.className = "py-3 rounded-xl font-800 text-xs uppercase bg-white dark:bg-zinc-800 text-rose-500 shadow-sm"; btnM.className = "py-3 rounded-xl font-800 text-xs uppercase text-zinc-500"; catK.classList.remove('hidden'); catM.classList.add('hidden'); sub.classList.remove('hidden'); }
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active')); document.getElementById('selected-category').value = "";
+        }
+        function selectCat(n, b) { document.querySelectorAll('.cat-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById('selected-category').value = n; }
+
+        function openEditModal(id, type, sub, amt, cat, date, note) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-date').value = date;
+            document.getElementById('edit-note').value = note;
+            const nom = document.getElementById('edit-nominal');
+            nom.value = amt;
+            formatRupiah(nom);
+            switchTypeEdit(type);
+            if(type === 'keluar') {
+                if(sub === 'pribadi') document.getElementById('edit-sub-pribadi').checked = true;
+                else document.getElementById('edit-sub-bisnis').checked = true;
+            }
+            document.getElementById('edit-selected-category').value = cat;
+            document.querySelectorAll('.edit-cat-btn').forEach(b => {
+                if(b.innerText.trim() === cat) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+            toggleModal('edit-modal');
+        }
+
+        function switchTypeEdit(type) {
+            document.getElementById('edit-type').value = type;
+            const btnM = document.getElementById('edit-btn-masuk'), btnK = document.getElementById('edit-btn-keluar'), catM = document.getElementById('edit-cat-masuk'), catK = document.getElementById('edit-cat-keluar'), sub = document.getElementById('edit-subtype-box');
+            if(type === 'masuk') { btnM.className = "py-3 rounded-xl font-800 text-xs uppercase bg-white dark:bg-zinc-800 text-emerald-500 shadow-sm"; btnK.className = "py-3 rounded-xl font-800 text-xs uppercase text-zinc-500"; catM.classList.remove('hidden'); catK.classList.add('hidden'); sub.classList.add('hidden'); }
+            else { btnK.className = "py-3 rounded-xl font-800 text-xs uppercase bg-white dark:bg-zinc-800 text-rose-500 shadow-sm"; btnM.className = "py-3 rounded-xl font-800 text-xs uppercase text-zinc-500"; catK.classList.remove('hidden'); catM.classList.add('hidden'); sub.classList.remove('hidden'); }
+        }
+        function selectCatEdit(n, b) { document.querySelectorAll('.edit-cat-btn').forEach(x => x.classList.remove('active')); b.classList.add('active'); document.getElementById('edit-selected-category').value = n; }
+
+        function editCategory(id, n, t) { document.getElementById('cat-title').innerText = "Edit Kategori"; document.getElementById('cat-action').value = "edit"; document.getElementById('cat-id').value = id; document.getElementById('cat-name').value = n; if(t === 'masuk') document.getElementById('cat-type-masuk').checked = true; else document.getElementById('cat-type-keluar').checked = true; document.getElementById('cat-cancel').classList.remove('hidden'); document.getElementById('cat-submit').innerText = "Update"; }
+        function resetCatForm() { document.getElementById('cat-title').innerText = "Kategori"; document.getElementById('cat-action').value = "add"; document.getElementById('cat-id').value = ""; document.getElementById('cat-name').value = ""; document.getElementById('cat-cancel').classList.add('hidden'); document.getElementById('cat-submit').innerText = "Simpan"; }
+
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.getElementById('root-html').classList.add('dark');
+        lucide.createIcons();
+    </script>
+</body>
+</html>
