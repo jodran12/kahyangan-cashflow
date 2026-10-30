@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slip gaji – Kahyangan.Bali</title>
+<style>
+:root{--bg:#f4f6f8;--surface:#fff;--ink:#16202a;--mute:#66717d;--line:#dfe4ea;--accent:#1b4b72;--accent-ink:#fff;--ok:#1f7a4d;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#10151b;--surface:#171e26;--ink:#e8ecf0;--mute:#93a0ad;--line:#2a343f;--accent:#6aa6d8;--accent-ink:#0b1722;--ok:#5fc08c;--err:#f08a82}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:980px;margin:0 auto;padding:32px 20px 64px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+h1{font-size:22px;margin:0;font-weight:650;letter-spacing:-.01em}
+header span{color:var(--mute);font-size:14px}
+h2{font-size:16px;margin:0 0 16px;font-weight:650}
+.grid{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:20px;margin-bottom:20px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:22px}
+label{display:block;font-size:13px;color:var(--mute);margin:0 0 4px}
+input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.f{margin-bottom:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:480px){.row{grid-template-columns:1fr;gap:0}}
+.primary{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.link{background:none;border:0;color:var(--mute);cursor:pointer;font:inherit;padding:4px 0 4px 12px}
+.link:hover{color:var(--err)}
+ul{list-style:none;margin:0 0 18px;padding:0}
+li{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+li small{display:block;color:var(--mute)}
+li.empty,td.empty{color:var(--mute)}
+.msg{min-height:22px;margin-top:12px;font-size:14px}
+.msg.ok{color:var(--ok)}.msg.err{color:var(--err)}
+.top{padding:10px 14px;border:1px solid var(--err);border-radius:6px;margin:0 0 16px}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-weight:500;font-size:13px;color:var(--mute);padding:0 0 8px;border-bottom:1px solid var(--line)}
+td{padding:10px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+fieldset{border:0;padding:0;margin:0 0 14px}
+legend{font-size:13px;color:var(--mute);padding:0;margin-bottom:6px}
+.line{display:grid;grid-template-columns:1fr 130px auto;gap:8px;margin-bottom:8px;align-items:center}
+@media(max-width:480px){.line{grid-template-columns:1fr 100px auto}}
+.add{background:none;border:1px dashed var(--line);color:var(--accent);border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer}
+.net{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line);margin-bottom:14px;font-weight:650}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Kahyangan.Bali</h1><span>Slip gaji karyawan</span></header>
+  <p id="top" class="top msg err" role="alert" hidden></p>
+
+  <div class="grid">
+    <section>
+      <h2>Buat slip gaji</h2>
+      <form id="slipForm">
+        <div class="f"><label for="emp">Karyawan</label><select id="emp" required></select></div>
+        <div class="row">
+          <div class="f"><label for="period">Periode gaji</label><input id="period" type="month" required></div>
+          <div class="f"><label for="payDate">Tanggal pembayaran</label><input id="payDate" type="date" required></div>
+        </div>
+        <div class="f"><label for="salary">Gaji (Rp)</label><input id="salary" inputmode="numeric" autocomplete="off" placeholder="2.500.000" required></div>
+        <fieldset><legend>Bonus (opsional)</legend><div id="bonusRows"></div><button type="button" class="add" data-add="bonus">+ Tambah bonus</button></fieldset>
+        <fieldset><legend>Pengurangan (opsional)</legend><div id="deductionRows"></div><button type="button" class="add" data-add="deduction">+ Tambah pengurangan</button></fieldset>
+        <div class="net"><span>Total diterima</span><span id="net">Rp 0</span></div>
+        <div class="f"><label for="issuer">Dikeluarkan oleh</label><select id="issuer"></select><input id="issuerOther" maxlength="80" placeholder="Nama penandatangan" hidden style="margin-top:8px"></div>
+        <div class="f"><label for="note">Catatan (opsional)</label><input id="note" maxlength="200" placeholder="Contoh: termasuk bonus target penjualan"></div>
+        <button class="primary" type="submit">Buat slip gaji</button>
+        <div id="msg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+
+    <section>
+      <h2>Karyawan</h2>
+      <ul id="empList"></ul>
+      <form id="empForm">
+        <div class="f"><label for="ename">Nama lengkap</label><input id="ename" required maxlength="80"></div>
+        <div class="f"><label for="epos">Jabatan</label><input id="epos" maxlength="80"></div>
+        <button class="primary" type="submit">Tambah karyawan</button>
+        <div id="emsg" class="msg" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+  </div>
+
+  <section>
+    <h2>Riwayat slip</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Periode</th><th>Karyawan</th><th class="num">Total diterima</th><th></th></tr></thead>
+      <tbody id="hist"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rp = n => 'Rp ' + Number(n).toLocaleString('id-ID');
+const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+let employees = [];
+function setOpts(sel, html) { const k = sel.value; sel.innerHTML = html; if ([...sel.options].some(o => o.value === k)) sel.value = k; }
+const bulan = p => BULAN[+p.slice(5) - 1] + ' ' + p.slice(0, 4);
+
+async function api(u, method = 'GET', body) {
+  let r;
+  try { r = await fetch(u, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) }); }
+  catch { throw new Error(location.protocol === 'file:' ? 'Halaman ini dibuka dari file di komputer. Buka lewat alamat domain setelah server.js berjalan.' : 'Tidak bisa terhubung ke server. Pastikan server.js sedang berjalan.'); }
+  const j = await r.json().catch(() => null);
+  if (!j) throw new Error('Alamat ini belum mengarah ke server.js slip gaji (status ' + r.status + '). Cek pengaturan nginx atau port-nya.');
+  if (!r.ok) throw new Error(j.error || 'Terjadi kesalahan, coba lagi');
+  return j;
+}
+const flash = (id, t, err) => { const m = $(id); m.textContent = t; m.className = 'msg ' + (err ? 'err' : 'ok'); };
+
+async function load() {
+  try { await render(); $('#top').hidden = true; }
+  catch (e) { $('#top').textContent = e.message; $('#top').hidden = false; }
+}
+async function render() {
+  employees = await api('api/employees');
+  const opts = employees.map(e => `<option value="${e.id}">${esc(e.name)}${e.position ? ' – ' + esc(e.position) : ''}</option>`).join('');
+  setOpts($('#emp'), opts || '<option value="">Belum ada karyawan</option>');
+  setOpts($('#issuer'), '<option value="__owner">Pemilik usaha</option>' + opts + '<option value="__other">Lainnya (ketik nama)</option>');
+  $('#empList').innerHTML = employees.map(e =>
+    `<li><span><b>${esc(e.name)}</b><small>${esc(e.position || '-')}</small></span><button class="link" data-del="${e.id}">Hapus</button></li>`
+  ).join('') || '<li class="empty">Tambahkan karyawan pertama di bawah.</li>';
+  const slips = await api('api/payslips');
+  $('#hist').innerHTML = slips.length
+    ? slips.map(s => `<tr><td>${bulan(s.period)}</td><td>${esc(s.name)}</td><td class="num">${rp(s.total)}</td><td class="num"><a href="api/payslips/${s.id}/pdf" target="_blank" rel="noopener">Buka PDF</a></td></tr>`).join('')
+    : '<tr><td colspan="4" class="empty">Belum ada slip. Pilih karyawan dan isi total gaji untuk membuat slip pertama.</td></tr>';
+}
+
+const fmt = d => (d ? Number(d).toLocaleString('id-ID') : '');
+const num = v => Number(String(v).replace(/\D/g, '')) || 0;
+const collect = kind => [...$('#' + kind + 'Rows').children]
+  .map(r => ({ label: r.querySelector('.lbl').value, amount: num(r.querySelector('.amt').value) })).filter(x => x.amount > 0);
+const sumOf = kind => collect(kind).reduce((t, x) => t + x.amount, 0);
+const calc = () => { $('#net').textContent = rp(num($('#salary').value) + sumOf('bonus') - sumOf('deduction')); };
+
+function addRow(kind) {
+  const box = $('#' + kind + 'Rows');
+  if (box.children.length >= 5) return;
+  const d = document.createElement('div'); d.className = 'line';
+  d.innerHTML = `<input class="lbl" maxlength="60" aria-label="Keterangan" placeholder="${kind === 'bonus' ? 'Keterangan bonus, mis. target penjualan' : 'Keterangan pengurangan, mis. kasbon'}"><input class="amt" inputmode="numeric" autocomplete="off" aria-label="Jumlah" placeholder="0"><button type="button" class="link rm">Hapus</button>`;
+  box.appendChild(d);
+  document.querySelector(`[data-add=${kind}]`).hidden = box.children.length >= 5;
+}
+const resetRows = () => ['bonus', 'deduction'].forEach(k => { $('#' + k + 'Rows').innerHTML = ''; addRow(k); });
+
+$('#slipForm').addEventListener('input', e => {
+  if (e.target.matches('#salary, .amt')) e.target.value = fmt(e.target.value.replace(/\D/g, ''));
+  calc();
+});
+$('#slipForm').addEventListener('click', e => {
+  if (e.target.dataset.add) return addRow(e.target.dataset.add);
+  if (!e.target.classList.contains('rm')) return;
+  const row = e.target.parentElement, box = row.parentElement;
+  if (box.children.length > 1) row.remove(); else row.querySelectorAll('input').forEach(i => (i.value = ''));
+  document.querySelector(`[data-add=${box.id === 'bonusRows' ? 'bonus' : 'deduction'}]`).hidden = false;
+  calc();
+});
+$('#issuer').addEventListener('change', e => { $('#issuerOther').hidden = e.target.value !== '__other'; });
+
+$('#slipForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  const iv = $('#issuer').value; let issuerName = '', issuerTitle = '';
+  if (iv === '__other') issuerName = $('#issuerOther').value.trim();
+  else if (iv !== '__owner') { const em = employees.find(x => x.id === iv); if (em) { issuerName = em.name; issuerTitle = em.position; } }
+  try {
+    const s = await api('api/payslips', 'POST', {
+      employeeId: $('#emp').value, period: $('#period').value, payDate: $('#payDate').value,
+      salary: num($('#salary').value), bonuses: collect('bonus'), deductions: collect('deduction'),
+      note: $('#note').value, issuerName, issuerTitle,
+    });
+    flash('#msg', `Slip ${s.no} untuk ${s.name} sudah dibuat. Buka PDF-nya di Riwayat slip.`);
+    $('#salary').value = ''; $('#note').value = ''; resetRows(); calc();
+    window.open(`api/payslips/${s.id}/pdf`, '_blank');
+    load();
+  } catch (e) { flash('#msg', e.message, true); }
+});
+
+$('#empForm').addEventListener('submit', async ev => {
+  ev.preventDefault();
+  try {
+    await api('api/employees', 'POST', { name: $('#ename').value, position: $('#epos').value });
+    ev.target.reset(); flash('#emsg', 'Karyawan ditambahkan.'); load();
+  } catch (e) { flash('#emsg', e.message, true); }
+});
+
+$('#empList').addEventListener('click', async ev => {
+  const id = ev.target.dataset.del;
+  if (!id || !confirm('Hapus karyawan ini? Slip yang sudah dibuat tetap tersimpan.')) return;
+  try { await api('api/employees/' + id, 'DELETE'); load(); } catch (e) { flash('#emsg', e.message, true); }
+});
+
+const now = new Date(), iso = new Date(now - now.getTimezoneOffset() * 60000).toISOString();
+$('#period').value = iso.slice(0, 7); $('#payDate').value = iso.slice(0, 10);
+resetRows(); calc();
+load();
+</script>
+</body>
+</html>

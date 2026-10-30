@@ -1,0 +1,109 @@
+{
+  "employees": [
+    {
+      "id": "dbccfe30-ee2b-46d1-b085-e434828f2583",
+      "name": "Ni Luh Ayu Sari",
+      "position": "Admin Toko"
+    },
+    {
+      "id": "565025c5-871c-49db-aa9f-2ffbecdc32b2",
+      "name": "I Made Putra Wijaya",
+      "position": "Packing & Gudang"
+    },
+    {
+      "id": "652073fa-4e9b-4acd-b3d3-2b4496959eaf",
+      "name": "Kadek Sinta Dewi",
+      "position": "Host Live TikTok"
+    },
+    {
+      "id": "f326ec13-bf91-4a73-8a82-2b4709e2c929",
+      "name": "Silvia Pasya Eka Emiliana Putri, S.M",
+      "position": "Pemilik"
+    }
+  ],
+  "payslips": [
+    {
+      "id": "95f7d7db-26df-417e-9acf-c50747983cbd",
+      "no": "SG-202603-001",
+      "employeeId": "dbccfe30-ee2b-46d1-b085-e434828f2583",
+      "name": "Ni Luh Ayu Sari",
+      "position": "Admin Toko",
+      "period": "2026-03",
+      "payDate": "2026-10-29",
+      "salary": 2500000,
+      "bonuses": [
+        {
+          "label": "Lembur",
+          "amount": 100000
+        },
+        {
+          "label": "Bonus",
+          "amount": 200000
+        }
+      ],
+      "deductions": [
+        {
+          "label": "Libur",
+          "amount": 100000
+        },
+        {
+          "label": "Parkir",
+          "amount": 2000
+        }
+      ],
+      "total": 2698000,
+      "issuerName": "Silvia Pasya",
+      "issuerTitle": "",
+      "note": "",
+      "createdAt": "2026-10-29T12:25:58.812Z"
+    },
+    {
+      "id": "48eb2f63-3dee-4cc2-a1d1-39799dbbc76a",
+      "no": "SG-202610-001",
+      "employeeId": "dbccfe30-ee2b-46d1-b085-e434828f2583",
+      "name": "Ni Luh Ayu Sari",
+      "position": "Admin Toko",
+      "period": "2026-10",
+      "payDate": "2026-10-29",
+      "salary": 2500000,
+      "bonuses": [],
+      "deductions": [],
+      "total": 2500000,
+      "issuerName": "Pemilik Usaha",
+      "issuerTitle": "",
+      "note": "",
+      "createdAt": "2026-10-29T12:27:06.880Z"
+    },
+    {
+      "id": "ca722e3e-e522-4df3-963d-535d55b92742",
+      "no": "SG-202610-002",
+      "employeeId": "dbccfe30-ee2b-46d1-b085-e434828f2583",
+      "name": "Ni Luh Ayu Sari",
+      "position": "Admin Toko",
+      "period": "2026-10",
+      "payDate": "2026-10-30",
+      "salary": 2500000,
+      "bonuses": [
+        {
+          "label": "Target Penjualan",
+          "amount": 200000
+        },
+        {
+          "label": "Lembur",
+          "amount": 100000
+        }
+      ],
+      "deductions": [
+        {
+          "label": "Tidak Masuk 1 Hari",
+          "amount": 100000
+        }
+      ],
+      "total": 2700000,
+      "issuerName": "Silvia Pasya Eka Emiliana Putri, S.M",
+      "issuerTitle": "Pemilik",
+      "note": "-",
+      "createdAt": "2026-10-30T10:46:46.011Z"
+    }
+  ]
+}

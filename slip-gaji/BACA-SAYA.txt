@@ -1,0 +1,17 @@
+Slip Gaji - cara menjalankan di komputer sendiri
+
+1. Pasang Node.js versi LTS dari https://nodejs.org (sekali saja, klik Next sampai selesai).
+2. Ekstrak file zip ini ke sebuah folder.
+3. Windows: klik dua kali jalankan.bat
+   Mac: klik dua kali jalankan.command (jika diblokir, klik kanan lalu pilih Open).
+4. Browser terbuka otomatis. Login: admin / admin123
+5. Untuk berhenti, tutup jendela hitamnya.
+
+Penting: jangan membuka public/index.html langsung. Halaman itu hanya bisa berfungsi
+selama server (jendela hitam tadi) sedang berjalan.
+
+Data tersimpan di data.json pada folder ini. Kata sandi admin123 hanya untuk komputer sendiri.
+Untuk VPS, set ADMIN_PASS dengan kata sandi kuat (lihat komentar di atas server.js).
+
+Logo slip: simpan gambar PNG bernama logoslip.png di folder ini (sejajar dengan server.js).
+Tidak perlu restart. Jika file tidak ada, slip tetap dibuat tanpa logo.
