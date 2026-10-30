@@ -1,13 +1,16 @@
 // Slip Gaji – Kahyangan.Bali
 // Jalankan : npm install && ADMIN_PASS="kata-sandi-kuat" node server.js
 // Produksi : ADMIN_PASS="..." pm2 start server.js --name slip-gaji
-//            lalu arahkan subdomain di nginx (proxy_pass http://127.0.0.1:3100) dan pasang HTTPS (certbot).
+//           lalu arahkan subdomain di nginx (proxy_pass http://127.0.0.1:3100) dan pasang HTTPS (certbot).
 // Data tersimpan di data.json (backup file ini secara berkala).
 const express = require('express');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+// Fungsi pembuat ID unik alternatif yang aman untuk Node.js versi lama
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 
 const COMPANY = { name: 'Kahyangan.Bali', address: 'Bali, Indonesia', signer: 'Pemilik Usaha' }; // ubah sesuai usaha
 const PORT = process.env.PORT || 3100;
@@ -19,9 +22,9 @@ const FILE = path.join(__dirname, 'data.json');
 const LOGO = path.join(__dirname, 'logoslip.png'); // taruh logo di sini (PNG), tanpa restart
 const db = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : {
   employees: [ // data dummy
-    { id: crypto.randomUUID(), name: 'Ni Luh Ayu Sari', position: 'Admin Toko' },
-    { id: crypto.randomUUID(), name: 'I Made Putra Wijaya', position: 'Packing & Gudang' },
-    { id: crypto.randomUUID(), name: 'Kadek Sinta Dewi', position: 'Host Live TikTok' },
+    { id: generateId(), name: 'Ni Luh Ayu Sari', position: 'Admin Toko' },
+    { id: generateId(), name: 'I Made Putra Wijaya', position: 'Packing & Gudang' },
+    { id: generateId(), name: 'Kadek Sinta Dewi', position: 'Host Live TikTok' },
   ],
   payslips: [],
 };
@@ -41,7 +44,7 @@ function terbilang(n) {
   if (n < 200) return 'seratus' + (n % 100 ? ' ' + terbilang(n % 100) : '');
   if (n < 1e3) return terbilang(Math.floor(n / 100)) + ' ratus' + (n % 100 ? ' ' + terbilang(n % 100) : '');
   if (n < 2e3) return 'seribu' + (n % 1e3 ? ' ' + terbilang(n % 1e3) : '');
-  if (n < 1e6) return terbilang(Math.floor(n / 1e3)) + ' ribu' + (n % 1e3 ? ' ' + terbilang(n % 1e3) : '');
+  if (n < 1e6) return terbilang(Math.floor(n / 1e3)) + ' juta' + (n % 1e3 ? ' ' + terbilang(n % 1e3) : '');
   if (n < 1e9) return terbilang(Math.floor(n / 1e6)) + ' juta' + (n % 1e6 ? ' ' + terbilang(n % 1e6) : '');
   return terbilang(Math.floor(n / 1e9)) + ' miliar' + (n % 1e9 ? ' ' + terbilang(n % 1e9) : '');
 }
@@ -84,7 +87,7 @@ function slipPdf(s, out) {
     doc.moveTo(L, y + h + 6).lineTo(R, y + h + 6).lineWidth(0.5).strokeColor(LINE).stroke();
     y += h + 14;
   };
-  row(`Gaji periode ${bulan(s.period)}`, rp(s.salary ?? s.total));
+  row(`Gaji periode ${bulan(s.period)}`, rp(s.salary || s.total));
   (s.bonuses || []).forEach(b => row(`Bonus: ${b.label}`, rp(b.amount)));
   (s.deductions || []).forEach(d => row(`Pengurangan: ${d.label}`, '- ' + rp(d.amount)));
 
@@ -119,16 +122,19 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const bad = (res, msg) => res.status(400).json({ error: msg });
-
 app.get('/api/employees', (q, r) => r.json(db.employees));
 app.post('/api/employees', (q, r) => {
   const name = String(q.body.name || '').trim().slice(0, 80), position = String(q.body.position || '').trim().slice(0, 80);
   if (!name) return bad(r, 'Nama karyawan wajib diisi');
-  const e = { id: crypto.randomUUID(), name, position };
+  const e = { id: generateId(), name, position };
   db.employees.push(e); save(); r.json(e);
 });
 app.delete('/api/employees/:id', (q, r) => { db.employees = db.employees.filter(e => e.id !== q.params.id); save(); r.json({ ok: true }); });
-
+app.delete('/api/payslips/:id', (q, r) => { 
+  db.payslips = db.payslips.filter(s => s.id !== q.params.id); 
+  save(); 
+  r.json({ ok: true }); 
+});
 app.get('/api/payslips', (q, r) => r.json([...db.payslips].reverse()));
 const lines = (a, def) => (Array.isArray(a) ? a : []).slice(0, 5)
   .map(x => ({ label: String(x.label || '').trim().slice(0, 60) || def, amount: Math.round(Number(x.amount)) }))
@@ -145,7 +151,7 @@ app.post('/api/payslips', (q, r) => {
   if (!(total > 0)) return bad(r, 'Pengurangan melebihi gaji dan bonus. Periksa kembali angkanya');
   const seq = db.payslips.filter(x => x.period === period).length + 1;
   const sl = {
-    id: crypto.randomUUID(), no: `SG-${period.replace('-', '')}-${String(seq).padStart(3, '0')}`,
+    id: generateId(), no: `SG-${period.replace('-', '')}-${String(seq).padStart(3, '0')}`,
     employeeId: e.id, name: e.name, position: e.position, period, payDate,
     salary, bonuses, deductions, total,
     issuerName: String(q.body.issuerName || '').trim().slice(0, 80) || COMPANY.signer,

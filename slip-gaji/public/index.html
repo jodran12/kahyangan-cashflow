@@ -84,12 +84,21 @@ legend{font-size:13px;color:var(--mute);padding:0;margin-bottom:6px}
     </section>
   </div>
 
-  <section>
+<section>
     <h2>Riwayat slip</h2>
-    <div class="scroll"><table>
-      <thead><tr><th>Periode</th><th>Karyawan</th><th class="num">Total diterima</th><th></th></tr></thead>
-      <tbody id="hist"></tbody>
-    </table></div>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Periode</th>
+            <th>Karyawan</th>
+            <th class="num">Total diterima</th>
+            <th>Aksi</th> <!-- Kolom baru untuk tombol -->
+          </tr>
+        </thead>
+        <tbody id="hist"></tbody>
+      </table>
+    </div>
   </section>
 </main>
 
@@ -129,6 +138,12 @@ async function render() {
   $('#hist').innerHTML = slips.length
     ? slips.map(s => `<tr><td>${bulan(s.period)}</td><td>${esc(s.name)}</td><td class="num">${rp(s.total)}</td><td class="num"><a href="api/payslips/${s.id}/pdf" target="_blank" rel="noopener">Buka PDF</a></td></tr>`).join('')
     : '<tr><td colspan="4" class="empty">Belum ada slip. Pilih karyawan dan isi total gaji untuk membuat slip pertama.</td></tr>';
+}
+async function hapusSlip(id) {
+  if (confirm('Yakin ingin menghapus slip gaji ini?')) {
+    await fetch('/api/payslips/' + id, { method: 'DELETE' });
+    location.reload(); // Refresh halaman setelah dihapus
+  }
 }
 
 const fmt = d => (d ? Number(d).toLocaleString('id-ID') : '');

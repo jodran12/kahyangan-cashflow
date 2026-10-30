@@ -1,22 +1,12 @@
 {
   "employees": [
     {
-      "id": "dbccfe30-ee2b-46d1-b085-e434828f2583",
-      "name": "Ni Luh Ayu Sari",
-      "position": "Admin Toko"
+      "id": "mvv0ddk7ndmnay",
+      "name": "Dewa Ayu Made Risma Dewi Yanti",
+      "position": "Host Live Streaming"
     },
     {
-      "id": "565025c5-871c-49db-aa9f-2ffbecdc32b2",
-      "name": "I Made Putra Wijaya",
-      "position": "Packing & Gudang"
-    },
-    {
-      "id": "652073fa-4e9b-4acd-b3d3-2b4496959eaf",
-      "name": "Kadek Sinta Dewi",
-      "position": "Host Live TikTok"
-    },
-    {
-      "id": "f326ec13-bf91-4a73-8a82-2b4709e2c929",
+      "id": "mvv0ewfxdm8ppy",
       "name": "Silvia Pasya Eka Emiliana Putri, S.M",
       "position": "Pemilik"
     }
@@ -104,6 +94,33 @@
       "issuerTitle": "Pemilik",
       "note": "-",
       "createdAt": "2026-10-30T10:46:46.011Z"
+    },
+    {
+      "id": "mvv0f0gx9kwpln",
+      "no": "SG-202610-003",
+      "employeeId": "mvv0ddk7ndmnay",
+      "name": "Dewa Ayu Made Risma Dewi Yanti",
+      "position": "Host Live Streaming",
+      "period": "2026-10",
+      "payDate": "2026-10-30",
+      "salary": 2500000,
+      "bonuses": [
+        {
+          "label": "Bonus",
+          "amount": 200000
+        }
+      ],
+      "deductions": [
+        {
+          "label": "Terlambat",
+          "amount": 50000
+        }
+      ],
+      "total": 2650000,
+      "issuerName": "Silvia Pasya Eka Emiliana Putri, S.M",
+      "issuerTitle": "Pemilik",
+      "note": "",
+      "createdAt": "2026-10-30T13:30:14.433Z"
     }
   ]
 }
